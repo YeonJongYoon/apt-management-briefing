@@ -13,6 +13,8 @@ permissions:
 jobs:
   briefing:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
+
     steps:
       - name: Get source code
         uses: actions/checkout@v4
@@ -27,7 +29,8 @@ jobs:
 
       - name: Run daily briefing
         env:
-          KAKAO_ACCESS_TOKEN: ${{ secrets.KAKAO_ACCESS_TOKEN }}
-          KAKAO_REFRESH_TOKEN: ${{ secrets.KAKAO_REFRESH_TOKEN }}
           KAKAO_REST_API_KEY: ${{ secrets.KAKAO_REST_API_KEY }}
+          KAKAO_CLIENT_SECRET: ${{ secrets.KAKAO_CLIENT_SECRET }}
+          KAKAO_REFRESH_TOKEN: ${{ secrets.KAKAO_REFRESH_TOKEN }}
+          GH_SECRETS_TOKEN: ${{ secrets.GH_SECRETS_TOKEN }}
         run: python main.py

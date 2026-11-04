@@ -42,6 +42,7 @@ def clean_html(value):
     parser.feed(value or "")
     return parser.get_text()
 
+
 def get_url(url, data=None, headers=None, method=None):
     request = urllib.request.Request(
         url,
@@ -49,8 +50,24 @@ def get_url(url, data=None, headers=None, method=None):
         headers=headers or {},
         method=method or ("POST" if data is not None else "GET")
     )
-    with urllib.request.urlopen(request, timeout=30) as response:
-        return response.read().decode("utf-8")
+
+    try:
+        with urllib.request.urlopen(request, timeout=30) as response:
+            return response.read().decode("utf-8")
+
+    except urllib.error.HTTPError as exc:
+        # 토큰이나 인증 헤더는 출력하지 않습니다.
+        print(f"HTTP 오류: {exc.code}")
+        print(f"요청 서버: {urllib.parse.urlparse(url).netloc}")
+
+        try:
+            detail = exc.read().decode("utf-8", errors="replace")
+            print(f"서버 오류 내용: {detail[:1000]}")
+        except Exception:
+            print("서버 오류 내용을 읽지 못했습니다.")
+
+        raise
+
 
 def refresh_kakao_token():
     rest_key = os.environ["KAKAO_REST_API_KEY"]

@@ -133,7 +133,6 @@ def update_github_secret(secret_name, secret_value):
         "encrypted_value": base64.b64encode(encrypted).decode("ascii"),
         "key_id": public_key_data["key_id"]
     }
-
     
     get_url(
         f"{api_base}/{secret_name}",

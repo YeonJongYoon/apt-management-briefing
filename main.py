@@ -42,17 +42,15 @@ def clean_html(value):
     parser.feed(value or "")
     return parser.get_text()
 
-
-def get_url(url, data=None, headers=None):
+def get_url(url, data=None, headers=None, method=None):
     request = urllib.request.Request(
         url,
         data=data,
         headers=headers or {},
-        method="POST" if data is not None else "GET"
+        method=method or ("POST" if data is not None else "GET")
     )
     with urllib.request.urlopen(request, timeout=30) as response:
         return response.read().decode("utf-8")
-
 
 def refresh_kakao_token():
     rest_key = os.environ["KAKAO_REST_API_KEY"]
@@ -119,13 +117,15 @@ def update_github_secret(secret_name, secret_value):
         "key_id": public_key_data["key_id"]
     }
 
+    
     get_url(
         f"{api_base}/{secret_name}",
         data=json.dumps(payload).encode("utf-8"),
         headers={
             **headers,
             "Content-Type": "application/json"
-        }
+        },
+        method="PUT"
     )
 
 

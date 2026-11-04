@@ -4,7 +4,7 @@ name: Daily Apartment Briefing
 on:
   schedule:
     - cron: "0 8 * * *"
-      timezone: "Asia/Ho_Chi_Minh"
+      timezone: "Asia/Seoul"
   workflow_dispatch:
 
 permissions:

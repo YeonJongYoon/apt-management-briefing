@@ -31,7 +31,7 @@ SEARCH_TERMS = [
 ]
 
 MAX_ARTICLES = 5
-MAX_CANDIDATES = 30
+MAX_CANDIDATES = 20
 
 
 def required(name):
@@ -331,7 +331,7 @@ def fetch_articles():
 
             articles.append({
                 "title": shorten(title, 250),
-                "description": shorten(description, 1200),
+                "description": shorten(description, 400),
                 "source": source or "출처 미상",
                 "url": link,
                 "published": published.isoformat(),

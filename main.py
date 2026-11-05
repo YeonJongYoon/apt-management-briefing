@@ -80,19 +80,62 @@ def safe_web_url(value):
 
 
 def request_api(method, url, **kwargs):
-    try:
-        response = requests.request(
-            method,
-            url,
-            timeout=(15, 180),
-            **kwargs,
-        )
-    except requests.RequestException:
-        raise RuntimeError(
-            f"서버 연결 실패: {urlsplit(url).hostname}"
-        ) from None
+    host = urlsplit(url).hostname
+    is_gemini = host == "generativelanguage.googleapis.com"
 
-    if not response.ok:
+    # 최초 요청 1회 + 재시도 3회
+    retry_delays = [15, 30, 60]
+    max_attempts = 4 if is_gemini else 1
+
+    for attempt in range(max_attempts):
+        try:
+            response = requests.request(
+                method,
+                url,
+                timeout=(15, 180),
+                **kwargs,
+            )
+        except requests.RequestException:
+            # 카카오 메시지의 중복 발송을 방지하기 위해
+            # 카카오·GitHub 요청은 자동 재시도하지 않습니다.
+            if is_gemini and attempt < max_attempts - 1:
+                delay = retry_delays[attempt]
+                print(
+                    f"Gemini 연결 실패. {delay}초 후 재시도합니다. "
+                    f"다음 시도: {attempt + 2}/{max_attempts}",
+                    flush=True,
+                )
+                time.sleep(delay)
+                continue
+
+            raise RuntimeError(
+                f"서버 연결 실패: {host}"
+            ) from None
+
+        if response.ok:
+            return response
+
+        # 일시적인 Gemini 서버 오류에만 재시도합니다.
+        retryable = response.status_code in (500, 502, 503, 504)
+
+        if (
+            is_gemini
+            and retryable
+            and attempt < max_attempts - 1
+        ):
+            status = response.status_code
+            response.close()
+            delay = retry_delays[attempt]
+
+            print(
+                f"Gemini 서버 오류 HTTP {status}. "
+                f"{delay}초 후 재시도합니다. "
+                f"다음 시도: {attempt + 2}/{max_attempts}",
+                flush=True,
+            )
+            time.sleep(delay)
+            continue
+
         error_code = ""
         try:
             error = response.json().get("error")
@@ -101,13 +144,26 @@ def request_api(method, url, **kwargs):
         except (ValueError, AttributeError):
             pass
 
-        # 비밀값이 포함될 수 있는 응답 원문은 출력하지 않습니다.
-        raise RuntimeError(
-            f"API 오류: {urlsplit(url).hostname}, "
-            f"HTTP {response.status_code} {error_code}"
-        )
+        status = response.status_code
+        response.close()
 
-    return response
+        if is_gemini and status == 503:
+            raise RuntimeError(
+                "Gemini 서버가 재시도 후에도 응답하지 않습니다. "
+                "잠시 후 새 워크플로를 실행해 주세요."
+            )
+
+        if is_gemini and status == 429:
+            raise RuntimeError(
+                "Gemini 호출 한도에 도달했거나 "
+                "현재 프로젝트에서 요청을 사용할 수 없습니다. "
+                "Google AI Studio의 무료 한도를 확인하세요."
+            )
+
+        raise RuntimeError(
+            f"API 오류: {host}, "
+            f"HTTP {status} {error_code}"
+        )
 
 
 def get_site_url():

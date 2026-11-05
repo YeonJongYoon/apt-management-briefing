@@ -31,7 +31,7 @@ SEARCH_TERMS = [
 ]
 
 MAX_ARTICLES = 5
-MAX_CANDIDATES = 20
+MAX_CANDIDATES = 30
 
 
 def required(name):
